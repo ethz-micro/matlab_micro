@@ -136,8 +136,8 @@ userData = struct('sxm',[]);
 s = cell(numel(fileNames),1);
 for ii = 1:numel(fileNames)
     wbar = waitbar(progress(ii),wbar);
-    sxm = sxm.load.loadProcessedSxM (sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name));
-    userData(kk).sxm = sxm;
+    sxmFile = sxm.load.loadProcessedSxM (sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name));
+    userData(kk).sxmFile = sxmFile;
     s{kk} = fileNames(ii).name;
     kk = kk +1;
 end
@@ -161,10 +161,10 @@ userData = handles.hFileList.UserData(handles.hFileList.Value);
 
 handles.hInfoList.String = '';
 %%
-fields = fieldnames(userData.sxm.header);
+fields = fieldnames(userData.sxmFile.header);
 s = cell(numel(fields),1);
 for i = 1:numel(fields);
-  cc = userData.sxm.header.(fields{i});
+  cc = userData.sxmFile.header.(fields{i});
   if isstr(cc)
       s{i} = sprintf('%s = %s',fields{i},cc);
   else
@@ -174,7 +174,7 @@ end
 handles.hInfoList.String = s;
 %%
 
-allFig = findobj('Tag',userData.sxm.header.scan_file);
+allFig = findobj('Tag',userData.sxmFile.header.scan_file);
 if ~isempty(allFig)
     figure(allFig);
     return
@@ -183,11 +183,11 @@ end
 % retrive screensize
 sSize = get(0,'screensize');
 
-nCh = numel(userData.sxm.channels);
+nCh = numel(userData.sxmFile.channels);
 
 [nRow,nCol,~] = utility.fitFig2Screen(nCh,[380,50,sSize(3)-380,sSize(4)-200]);
 figure('Position',[380,50,(sSize(4)-100)*nRow/nCol,sSize(4)-200],...
-    'Tag',userData.sxm.header.scan_file,...
+    'Tag',userData.sxmFile.header.scan_file,...
     'WindowStyle','Docked');
 
 for iCh = nCh:-1:1
@@ -195,7 +195,7 @@ for iCh = nCh:-1:1
     sp = subplot(nCol,nRow,iCh);
     sp_outPos =  get(gca,'OuterPosition');
     
-    p = sxm.plot.plotChannel(userData.sxm.channels(iCh),userData.sxm.header);
+    p = sxm.plot.plotChannel(userData.sxmFile.channels(iCh),userData.sxmFile.header);
     colormap(sxm.op.nanonisMap(128))
     
     % plotData automatically sets
@@ -203,7 +203,7 @@ for iCh = nCh:-1:1
     set(sp,'OuterPosition',sp_outPos);
     set(sp,'FontSize',9)
     
-    set(p,'ButtonDownFcn',@(hObject,eventdata)plotThis(hObject,eventdata,userData.sxm,iCh))
+    set(p,'ButtonDownFcn',@(hObject,eventdata)plotThis(hObject,eventdata,userData.sxmFile,iCh))
 end
 
 function closeViewer(~,~)
@@ -211,16 +211,17 @@ function closeViewer(~,~)
 fprintf('close all windows\n');
 close all
 
-function plotThis(~,~,sxm,channel)
+function plotThis(~,~,sxmFile,channel)
 f = figure;
-f.Units = 'Centimeters';
-fpos = f.Position;
-f.Position = [fpos(1:2),7.8,7.9];
-p = sxm.plot.plotChannel(sxm.channels(channel),sxm.header);
-p.Parent.FontSize = 8;
+set(f,'Position',[400 100 512 512],'PaperUnits','Points','PaperSize',[512,512],'PaperPosition',[0,0,512,512]);
+%f.Units = 'Centimeters';
+%fpos = f.Position;
+%f.Position = [fpos(1:2),7.8,7.9];
+p = sxm.plot.plotChannel(sxmFile.channels(channel),sxmFile.header);
+p.Parent.FontSize = 10;
 colormap(sxm.op.nanonisMap(128))
 %pause(100/1000);
 %f.Visible = 'off';
-%print(f,'-clipboard','-dbitmap')
-%disp('copied to clipboard')
+print(f,'-clipboard','-dbitmap')
+disp('copied to clipboard')
 %delete(f)
