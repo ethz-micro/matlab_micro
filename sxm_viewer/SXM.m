@@ -2,11 +2,9 @@ function  SXM(varargin)
 
 %sSize = get(0,'screensize');
 
-addpath('../../matlab_nanonis/NanoLib/')
-
 %  Create and then hide the UI as it is being constructed.
 hSXM = figure('Name','SXM_Viewer','Visible','off',...
-    'Position',[50,50,340,650],'Tag','SXM_Viewer');
+    'Position',[50,50,340,655],'Tag','SXM_Viewer');
 
 set(hSXM,'DeleteFcn',@closeViewer)
 
@@ -21,14 +19,27 @@ hSXM.Visible = 'on';
 % uiwait(hSXM);
 
 function SXM_OpeningFcn(~, handles, varargin)
-    
+
+% in order to set local paths for the NanoLib and the directory where
+% images are saved you may save in the same folder where SXM.m is a matlab
+% script called 'localVariables.m' with the following informations:
+% nanoPath = '../../matlab_nanonis/NanoLib/'; % your path to NanoLib
+% sxmPath = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/'; % your path to sxm data
+
+if exist('localVariables.m','file')
+    run('localVariables.m');
+else
+    nanoPath = '../../matlab_nanonis/NanoLib/';
+    sxmPath = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/';
+end
+addpath(nanoPath);
+handles.hFolderName.UserData = sxmPath;
+
 handles.hSystem.UserData = '/';
-handles.hFolderName.UserData = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/';
 handles.hSystem.String = 'OS X';
 if ispc
     handles.hSystem.String = 'Windows';
     handles.hSystem.UserData = '\';
-    handles.hFolderName.UserData = 'Z:\CLAM2\hpt_c6.2\Nanonis\Data\';
 end
 
 
@@ -38,15 +49,24 @@ px = 20;
 py = 570;
 
 handles.hSystem = uicontrol('Parent',hObject,'Style','text',...
-    'Position',[px,py+55,300,15],'String','OP System','HorizontalAlignment','left');
+    'Position',[px,py+60,95,15],'String','OP System','HorizontalAlignment','left');
 
 handles.hFolderName = uicontrol('Parent',hObject,'Style','edit',...
     'String','actualfolder','Position',[px,py+30,300,25],'HorizontalAlignment','left',...
     'Callback',@(hObject,eventdata)hFolderName_Callback(hObject,eventdata,guidata(hObject)));
 
+handles.hProcessType = uicontrol('Parent',hObject,'Style','popup',...
+    'Position',[px-5,py+7,150,15],'String',{'Mean','PlaneLineCorrection','Median'},...
+    'HorizontalAlignment','left',...
+    'Callback',@(hObject,eventdata)hClean_Callback(hObject,eventdata,guidata(hObject)));
+
 handles.hOpenFolder = uicontrol('Parent',hObject,'Style','pushbutton',...
-    'Position',[px,py,300,25],'String','Open',...
+    'Position',[px+220,py,80,25],'String','Open',...
     'Callback',@(hObject,eventdata)hOpenFolder_Callback(hObject,eventdata,guidata(hObject)));
+
+% handles.hClean = uicontrol('Parent',hObject,'Style','pushbutton',...
+%     'Position',[px+220,py,80,25],'String','Clean',...
+%     'Callback',@(hObject,eventdata)hClean_Callback(hObject,eventdata,guidata(hObject)));
 
 
 %-------------------------------------------------------------------------%
@@ -57,11 +77,8 @@ handles.hFileList = uicontrol('Parent',hObject,'Style','listbox',...
     'Position',[px,py+300,300,240],'String','Files list',...
     'Callback',@(hObject,eventdata)hFileList_Callback(hObject,eventdata,guidata(hObject)));
 
-
 handles.hInfoList = uicontrol('Parent',hObject,'Style','listbox',...
     'Position',[px,py,300,280],'String','Files info list');
-
-
 
 % Choose default command line output for SXM_Combine_Channels
 handles.output = hObject;
@@ -100,6 +117,25 @@ handles.hFolderName.String = folderName;
 loadFiles(hObject,handles)
 showFiles(hObject,handles,eventdata)
 
+% --- Executes on button press in hOpenFolder.
+function hClean_Callback(~, ~, handles)
+% hObject    handle to hOpenFolder (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+userData = handles.hFileList.UserData;
+fileNames = handles.hFileList.String;
+for ii = 1:numel(fileNames)
+    if ~isempty(userData(ii).sxmFile.header)
+        sxmFile = struct('header',[],'channels',[]);
+        userData(ii).sxmFile = sxmFile;
+    end
+end
+
+% save values to list
+handles.hFileList.UserData= userData;
+
+
 % --- Executes on selection change in hFileList.
 function hFileList_Callback(hObject, eventdata, handles)
 % hObject    handle to hFileList (see GCBO)
@@ -112,7 +148,7 @@ showFiles(hObject,handles,eventdata);
 
 % ------------------------------ USER FUNCTIONS ---------------------------
 
-function loadFiles(hObject,handles)
+function loadFiles(~,handles)
 
 folderName = handles.hFolderName.String;
 handles.hFolderName.UserData = fileparts(handles.hFolderName.String(1:end-1));
@@ -137,7 +173,9 @@ s = cell(numel(fileNames),1);
 for ii = 1:numel(fileNames)
     wbar = waitbar(progress(ii),wbar);
     if ii == 1
-        sxmFile = sxm.load.loadProcessedSxM (sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name));
+        sxmFile = sxm.load.loadProcessedSxM (...
+            sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name),...
+            handles.hProcessType.String{handles.hProcessType.Value});
     else
         sxmFile = struct('header',[],'channels',[]);
     end
@@ -160,15 +198,18 @@ handles.hFileList.UserData= userData;
 handles.hFileList.String = s;
 
 
-function showFiles(hObject,handles,~)
+function showFiles(~,handles,~)
 
-
+newLoad = false;
 % check if user data is empty. if yes, load data
 if isempty(handles.hFileList.UserData(handles.hFileList.Value).sxmFile.header)
     folderName = handles.hFolderName.String;
     fileName = handles.hFileList.String{handles.hFileList.Value};
-    sxmFile = sxm.load.loadProcessedSxM (sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileName));
+    sxmFile = sxm.load.loadProcessedSxM (...
+        sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileName),...
+        handles.hProcessType.String{handles.hProcessType.Value});
     handles.hFileList.UserData(handles.hFileList.Value).sxmFile = sxmFile;
+    newLoad = true;
 end
 
 userData = handles.hFileList.UserData(handles.hFileList.Value);
@@ -179,7 +220,7 @@ fields = fieldnames(userData.sxmFile.header);
 s = cell(numel(fields),1);
 for i = 1:numel(fields);
   cc = userData.sxmFile.header.(fields{i});
-  if isstr(cc)
+  if ischar(cc)
       s{i} = sprintf('%s = %s',fields{i},cc);
   else
       s{i} = sprintf('%s = %s',fields{i},mat2str(cc));
@@ -189,7 +230,7 @@ handles.hInfoList.String = s;
 %%
 
 allFig = findobj('Tag',userData.sxmFile.header.scan_file);
-if ~isempty(allFig)
+if ~isempty(allFig) && ~newLoad
     figure(allFig);
     return
 end
