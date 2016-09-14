@@ -132,11 +132,16 @@ handles.hFileList.String = '';
 progress = linspace(1/numel(fileNames),1,numel(fileNames));
 wbar = waitbar(0,'searching SXM measurements');
 kk = 1;
-userData = struct('sxm',[]);
+userData = struct('sxmFile',[]);
 s = cell(numel(fileNames),1);
 for ii = 1:numel(fileNames)
     wbar = waitbar(progress(ii),wbar);
-    sxmFile = sxm.load.loadProcessedSxM (sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name));
+    if ii == 1
+        sxmFile = sxm.load.loadProcessedSxM (sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name));
+    else
+        sxmFile = struct('header',[],'channels',[]);
+    end
+        
     userData(kk).sxmFile = sxmFile;
     s{kk} = fileNames(ii).name;
     kk = kk +1;
@@ -157,10 +162,19 @@ handles.hFileList.String = s;
 
 function showFiles(hObject,handles,~)
 
+
+% check if user data is empty. if yes, load data
+if isempty(handles.hFileList.UserData(handles.hFileList.Value).sxmFile.header)
+    folderName = handles.hFolderName.String;
+    fileName = handles.hFileList.String{handles.hFileList.Value};
+    sxmFile = sxm.load.loadProcessedSxM (sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileName));
+    handles.hFileList.UserData(handles.hFileList.Value).sxmFile = sxmFile;
+end
+
 userData = handles.hFileList.UserData(handles.hFileList.Value);
 
 handles.hInfoList.String = '';
-%%
+
 fields = fieldnames(userData.sxmFile.header);
 s = cell(numel(fields),1);
 for i = 1:numel(fields);
