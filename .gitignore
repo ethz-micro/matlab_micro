@@ -1,5 +1,6 @@
-## Files to ingnore
+## Matlab Files to ingnore
 sxm_viewer/localVariables.m
+*.asv
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
