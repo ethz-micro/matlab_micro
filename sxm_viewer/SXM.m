@@ -6,33 +6,34 @@ function  SXM(varargin)
 hSXM = figure('Name','SXM_Viewer','Visible','off',...
     'Position',[50,50,340,655],'Tag','SXM_Viewer');
 
-set(hSXM,'DeleteFcn',@closeViewer)
-
 SXM_CreateFcn(hSXM);
 
-SXM_OpeningFcn(hSXM, guidata(hSXM), varargin)
+set(hSXM,'DeleteFcn',@(hObject,eventdata)closeViewer(hObject,eventdata,guidata(hSXM)))
 
-% set dialog to visible
-hSXM.Visible = 'on';
+openError = SXM_OpeningFcn(hSXM, guidata(hSXM), varargin);
+
+if ~openError
+    % set dialog to visible
+    set(hSXM, 'menubar', 'none');
+    hSXM.Visible = 'on';
+end
 
 % wait for closing of the main figure.
 % uiwait(hSXM);
 
-function SXM_OpeningFcn(~, handles, varargin)
+function openError = SXM_OpeningFcn(~, handles, varargin)
 
-% in order to set local paths for the NanoLib and the directory where
-% images are saved you may save in the same folder where SXM.m is a matlab
-% script called 'localVariables.m' with the following informations:
-% nanoPath = '../../matlab_nanonis/NanoLib/'; % your path to NanoLib
-% sxmPath = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/'; % your path to sxm data
+openError = false; 
 
-if exist('localVariables.m','file')
-    run('localVariables.m');
+if exist('viewerSettings.m','file')==2
+    run('viewerSettings.m');
 else
-    nanoPath = '../../matlab_nanonis/NanoLib/';
-    sxmPath = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/';
+    openError = true;
+    wdlg = warndlg({'1. Read readme.txt file';'2. Create file: settings.m';'3. Run SXM.m again'});
+    waitfor(wdlg);
+    return
 end
-addpath(nanoPath);
+addpath(nanoPath{:});
 handles.hFolderName.UserData = sxmPath;
 
 handles.hSystem.UserData = '/';
@@ -224,7 +225,7 @@ handles.hInfoList.String = '';
 
 fields = fieldnames(userData.sxmFile.header);
 s = cell(numel(fields),1);
-for i = 1:numel(fields);
+for i = 1:numel(fields)
   cc = userData.sxmFile.header.(fields{i});
   if ischar(cc)
       s{i} = sprintf('%s = %s',fields{i},cc);
@@ -267,10 +268,10 @@ for iCh = nCh:-1:1
     set(p,'ButtonDownFcn',@(hObject,eventdata)plotThis(hObject,eventdata,userData.sxmFile,iCh))
 end
 
-function closeViewer(~,~)
+function closeViewer(hObject,eventdata,handles)
 
 fprintf('close all windows\n');
-close all
+delete(hObject);
 
 function plotThis(~,~,sxmFile,channel)
 f = figure;

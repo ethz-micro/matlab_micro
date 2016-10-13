@@ -6,27 +6,35 @@ function  DAT(varargin)
 hDAT = figure('Name','DAT_Viewer','Visible','off',...
     'Position',[50,50,340,655],'Tag','DAT_Viewer');
 
-set(hDAT,'DeleteFcn',@closeViewer)
-
 DAT_CreateFcn(hDAT);
 
-DAT_OpeningFcn(hDAT, guidata(hDAT), varargin)
+set(hDAT,'DeleteFcn',@(hObject,eventdata)closeViewer(hObject,eventdata,guidata(hDAT)))
 
-% set dialog to visible
-set(hDAT, 'menubar', 'none');
-hDAT.Visible = 'on';
+openError = DAT_OpeningFcn(hDAT, guidata(hDAT), varargin);
+
+
+if ~openError
+    % set dialog to visible
+    set(hDAT, 'menubar', 'none');
+    hDAT.Visible = 'on';
+end
 
 % wait for closing of the main figure.
 % uiwait(hDAT);
 
-function DAT_OpeningFcn(~, handles, varargin)
+function openError = DAT_OpeningFcn(~, handles, varargin)
 
-if exist('settings.m','file')==2
-    run('settings.m');
+openError = false; 
+
+if exist('viewerSettings.m','file')==2
+    run('viewerSettings.m');
 else
-    nanoPath = '../../matlab_nanonis/NanoLib/';
-    datPath = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/';
+    openError = true;
+    wdlg = warndlg({'1. Read readme.txt file';'2. Create file: settings.m';'3. Run SXM.m again'});
+    waitfor(wdlg);
+    return
 end
+
 addpath(nanoPath{:});
 handles.hFolderName.UserData = datPath;
 
@@ -251,10 +259,10 @@ else
     hObject.String = 'hold exported';
 end
 
-function closeViewer(~,~)
+function closeViewer(hObject,eventdata,handles)
 
 fprintf('close all windows\n');
-close all
+delete(hObject);
 
 function plotThis(~,~,handles,datFile,channel)
 

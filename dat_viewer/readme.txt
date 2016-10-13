@@ -9,7 +9,7 @@ The DAT viewer allows to open dat files and have a fast overview of all channels
 # --------------------------------------------------
 
 In order to use the DAT viewer you need to set local paths for the NanoLib (end eventually your library) and the path to directory where images are saved.
-To this end you have to save in the same directory a MATLAB script called ‘settings.m’ where ‘DAT.m’ is (this directory)  with the following informations:
+To this end you have to save a MATLAB script called ‘viewerSettings.m’ in the same directory  where ‘DAT.m’ is (this directory) with the following informations:
 
 % local path to NanoLib. variable ‘nanoPath’ MUST be a cell.
 nanoPath = {'../../matlab_nanonis/NanoLib/','../../matlab_nanonis_myLibrary/‘};
