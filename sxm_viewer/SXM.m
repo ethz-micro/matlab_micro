@@ -4,7 +4,7 @@ function  SXM(varargin)
 
 %  Create and then hide the UI as it is being constructed.
 hSXM = figure('Name','SXM_Viewer','Visible','off',...
-    'Position',[50,50,340,655],'Tag','SXM_Viewer');
+    'Position',[50,-50,340,655],'Tag','SXM_Viewer');
 
 set(hSXM,'DeleteFcn',@closeViewer)
 
@@ -73,8 +73,11 @@ handles.hOpenFolder = uicontrol('Parent',hObject,'Style','pushbutton',...
 px = 20;
 py = 20;
 
+handles.hSValue = uicontrol('Parent',hObject,'Style','edit',...
+    'Position',[px,py+500,40,25],'String','0.015');
+
 handles.hFileList = uicontrol('Parent',hObject,'Style','listbox',...
-    'Position',[px,py+300,300,240],'String','Files list',...
+    'Position',[px,py+300,300,200],'String','Files list',...
     'Callback',@(hObject,eventdata)hFileList_Callback(hObject,eventdata,guidata(hObject)));
 
 handles.hInfoList = uicontrol('Parent',hObject,'Style','listbox',...
@@ -176,10 +179,11 @@ for ii = 1:numel(fileNames)
         sxmFile = sxm.load.loadProcessedSxM (...
             sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name),...
             handles.hProcessType.String{handles.hProcessType.Value});
+        sxmFile = processData(sxmFile,handles);
     else
         sxmFile = struct('header',[],'channels',[]);
     end
-        
+         
     userData(kk).sxmFile = sxmFile;
     s{kk} = fileNames(ii).name;
     kk = kk +1;
@@ -208,6 +212,9 @@ if isempty(handles.hFileList.UserData(handles.hFileList.Value).sxmFile.header)
     sxmFile = sxm.load.loadProcessedSxM (...
         sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileName),...
         handles.hProcessType.String{handles.hProcessType.Value});
+    
+    sxmFile =  processData(sxmFile,handles);
+    
     handles.hFileList.UserData(handles.hFileList.Value).sxmFile = sxmFile;
     newLoad = true;
 end
@@ -260,6 +267,43 @@ for iCh = nCh:-1:1
     
     set(p,'ButtonDownFcn',@(hObject,eventdata)plotThis(hObject,eventdata,userData.sxmFile,iCh))
 end
+
+function sxmFile = processData(sxmFile,handles) %Gabriele
+
+    %disp(handles.hSValue.String)
+    %Add datas
+    fwdbwd = {'forward','backward'};
+    for i = 1:2
+        chList = utility.getChannel(sxmFile.channels,'Channel_',fwdbwd{i});
+        if chList ~ []
+            SFMChn = utility.combineChannel(sxmFile,'4 channels',chList,1/4*[1,1,1,1]);
+            INPChn = utility.combineChannel(sxmFile,'INP',chList,0.015*[1,0,-1,0]);
+            INPDenChn = utility.combineChannel(sxmFile,'INPD',chList,[1,0,1,0]);
+            INPChn.data = INPChn.data/INPDenChn.data;
+            OOPChn = utility.combineChannel(sxmFile,'OOP',chList,0.015*[0,1,0,-1]);
+            OOPDenChn = utility.combineChannel(sxmFile,'OOP',chList,[0,1,0,1]);
+            OOPChn.data = OOPChn.data/OOPDenChn.data;
+            
+            iCh = numel(sxmFile.channels);
+            
+            sxmFile.channels(iCh+1).Name = SFMChn.Name;
+            sxmFile.channels(iCh+1).Direction = SFMChn.Direction;
+            sxmFile.channels(iCh+1).data = SFMChn.data;
+            sxmFile.channels(iCh+1).Unit = SFMChn.Unit;
+            
+            sxmFile.channels(iCh+2).Name = INPChn.Name;
+            sxmFile.channels(iCh+2).Direction = INPChn.Direction;
+            sxmFile.channels(iCh+2).data = INPChn.data;
+            sxmFile.channels(iCh+2).Unit = INPChn.Unit;
+            
+            sxmFile.channels(iCh+3).Name = OOPChn.Name;
+            sxmFile.channels(iCh+3).Direction = OOPChn.Direction;
+            sxmFile.channels(iCh+3).data = OOPChn.data;
+            sxmFile.channels(iCh+3).Unit = OOPChn.Unit;
+            
+        end
+        
+    end
 
 function closeViewer(~,~)
 
