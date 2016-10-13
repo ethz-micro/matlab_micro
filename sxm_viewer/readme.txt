@@ -23,12 +23,10 @@ sxmPath = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/';
 1. Run SXM viewer main file:
    >> SXM
 
-2. Select the process type in the popupmenu.
+2. Select the process type in the popupmenu (default = Raw)
 
-2. Press open button and search for the directory where measurements are;
+3. Press open button and search for the directory where measurements are;
 
 3. Press items in the list box in order to let them appear in a new figure;
 
 4. Press on plotted channels to export them on a new figure.
-
-5. Whenever the button ‘hold exported’ is active (blue capital letters), all exported channels will be inserted in the same figure.

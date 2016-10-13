@@ -27,22 +27,20 @@ openError = false;
 
 if exist('viewerSettings.m','file')==2
     run('viewerSettings.m');
+    addpath(nanoPath{:});
+    handles.hFolderName.UserData = sxmPath;
+    
+    handles.hSystem.UserData = '/';
+    handles.hSystem.String = 'OS X';
+    if ispc
+        handles.hSystem.String = 'Windows';
+        handles.hSystem.UserData = '\';
+    end
 else
     openError = true;
     wdlg = warndlg({'1. Read readme.txt file';'2. Create file: settings.m';'3. Run SXM.m again'});
     waitfor(wdlg);
-    return
 end
-addpath(nanoPath{:});
-handles.hFolderName.UserData = sxmPath;
-
-handles.hSystem.UserData = '/';
-handles.hSystem.String = 'OS X';
-if ispc
-    handles.hSystem.String = 'Windows';
-    handles.hSystem.UserData = '\';
-end
-
 
 function SXM_CreateFcn(hObject,handles)
 %-------------------------------------------------------------------------%
@@ -59,7 +57,7 @@ handles.hFolderName = uicontrol('Parent',hObject,'Style','edit',...
 handles.hProcessType = uicontrol('Parent',hObject,'Style','popup',...
     'Position',[px-5,py+7,150,15],'String',{'Raw','Mean','PlaneLineCorrection','Median'},...
     'HorizontalAlignment','left',...
-    'Callback',@(hObject,eventdata)hClean_Callback(hObject,eventdata,guidata(hObject)));
+    'Callback',@(hObject,eventdata)hProcessType_Callback(hObject,eventdata,guidata(hObject)));
 
 handles.hOpenAll = uicontrol('Parent',hObject,'Style','checkbox',...
     'Position',[px+155,py-2,70,25],'string','load all',...
@@ -101,7 +99,7 @@ function hFolderName_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of hFolderName as text
 %        str2double(get(hObject,'String')) returns contents of hFolderName as a double
 loadFiles(hObject,handles)
-showFiles(hObject,handles,eventdata)
+showFiles(hObject,eventdata,handles)
 
 % --- Executes on button press in hOpenFolder.
 function hOpenFolder_Callback(hObject, eventdata, handles)
@@ -120,23 +118,26 @@ folderName = sprintf('%s%s',folderName,handles.hSystem.UserData);
 handles.hFolderName.String = folderName;
 
 loadFiles(hObject,handles)
-showFiles(hObject,handles,eventdata)
 
 % --- Executes on button press in hOpenFolder.
-function hClean_Callback(~, ~, handles)
+function hProcessType_Callback(~, ~, handles)
 % hObject    handle to hOpenFolder (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 userData = handles.hFileList.UserData;
 fileNames = handles.hFileList.String;
-for ii = 1:numel(fileNames)
-    if ~isempty(userData(ii).sxmFile.header)
-        sxmFile = struct('header',[],'channels',[]);
-        userData(ii).sxmFile = sxmFile;
+if ~strcmp(fileNames,'Files list')
+    progress = linspace(1/numel(fileNames),1,numel(fileNames));
+    wbar = waitbar(0,'searching SXM measurements');
+    for ii = 1:numel(fileNames)
+        wbar = waitbar(progress(ii),wbar);
+        if ~isempty(userData(ii).sxmFile.header)
+            userData(ii).sxmFile = loadSXM(fileNames{ii},handles);
+        end
     end
+    close(wbar);
 end
-
 % save values to list
 handles.hFileList.UserData= userData;
 
@@ -149,7 +150,7 @@ function hFileList_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns hFileList contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from hFileList
 %hSXMLoad_Callback(hObject, eventdata, handles)
-showFiles(hObject,handles,eventdata);
+showFiles(hObject,eventdata,handles)
 
 % ------------------------------ USER FUNCTIONS ---------------------------
 
@@ -178,9 +179,7 @@ s = cell(numel(fileNames),1);
 for ii = 1:numel(fileNames)
     wbar = waitbar(progress(ii),wbar);
     if ii == 1 || handles.hOpenAll.Value
-        sxmFile = sxm.load.loadProcessedSxM (...
-            sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name),...
-            handles.hProcessType.String{handles.hProcessType.Value});
+        sxmFile = loadSXM(fileNames(ii).name,handles);
     else
         sxmFile = struct('header',[],'channels',[]);
     end
@@ -202,18 +201,20 @@ end
 handles.hFileList.UserData= userData;
 handles.hFileList.String = s;
 
+function sxmFile = loadSXM(fileName,handles)
+folderName = handles.hFolderName.String;
+sxmFile = sxm.load.loadProcessedSxM(...
+    sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileName),...
+    handles.hProcessType.String{handles.hProcessType.Value});
 
-function showFiles(~,handles,~)
+function showFiles(hObject,eventdata,handles)
 
 newLoad = false;
 % check if user data is empty. if yes, load data
 if isempty(handles.hFileList.UserData(handles.hFileList.Value).sxmFile.header)
-    folderName = handles.hFolderName.String;
     fileName = handles.hFileList.String{handles.hFileList.Value};
     hdlg = helpdlg(sprintf('open: %s',fileName));
-    sxmFile = sxm.load.loadProcessedSxM (...
-        sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileName),...
-        handles.hProcessType.String{handles.hProcessType.Value});
+    sxmFile = loadSXM(fileName,handles);
     handles.hFileList.UserData(handles.hFileList.Value).sxmFile = sxmFile;
     newLoad = true;
     close(hdlg);
@@ -235,8 +236,8 @@ for i = 1:numel(fields)
 end
 handles.hInfoList.String = s;
 %%
-
-allFig = findobj('Tag',userData.sxmFile.header.scan_file);
+tagString = sprintf('%d: %s',handles.hProcessType.Value,userData.sxmFile.header.scan_file);
+allFig = findobj('Tag',tagString);
 if ~isempty(allFig) && ~newLoad
     figure(allFig);
     return
@@ -249,11 +250,10 @@ nCh = numel(userData.sxmFile.channels);
 
 [nRow,nCol,~] = utility.fitFig2Screen(nCh,[380,50,sSize(3)-380,sSize(4)-200]);
 figure('Position',[380,50,(sSize(4)-100)*nRow/nCol,sSize(4)-200],...
-    'Tag',userData.sxmFile.header.scan_file,...
+    'Tag',sprintf('%d: %s',tagString),...
     'WindowStyle','Docked');
 
 for iCh = nCh:-1:1
-    %f(iCh) = figure('Position',figPosition(iCh,:),'Tag','sxm_figure');
     sp = subplot(nCol,nRow,iCh);
     sp_outPos =  get(gca,'OuterPosition');
     
@@ -276,14 +276,9 @@ delete(hObject);
 function plotThis(~,~,sxmFile,channel)
 f = figure;
 set(f,'Position',[400 100 512 512],'PaperUnits','Points','PaperSize',[512,512],'PaperPosition',[0,0,512,512]);
-%f.Units = 'Centimeters';
-%fpos = f.Position;
-%f.Position = [fpos(1:2),7.8,7.9];
 p = sxm.plot.plotChannel(sxmFile.channels(channel),sxmFile.header);
 p.Parent.FontSize = 10;
 colormap(sxm.op.nanonisMap(128))
-%pause(100/1000);
-%f.Visible = 'off';
 print(f,'-clipboard','-dbitmap')
 disp('copied to clipboard')
 %delete(f)
