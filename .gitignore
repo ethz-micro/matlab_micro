@@ -1,5 +1,5 @@
 ## Matlab Files to ingnore
-sxm_viewer/localVariables.m
+*viewerSettings.m
 *.asv
 *.m~
 
