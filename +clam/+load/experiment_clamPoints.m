@@ -104,12 +104,13 @@ if sweepMax ~= length(raw_chn(1).data)
         channels(k).Unit = raw_chn(i).Unit;
         channels(k).Direction = 'forward';
         channels(k).data = nan(length(energies),header.loops);
+        channels(k).rawData = raw_chn(i).data(1:imax,:);
         % backward
         channels(k+1).Name = raw_chn(i).Name;
         channels(k+1).Unit = raw_chn(i).Unit;
         channels(k+1).Direction = 'backward';
         channels(k+1).data = nan(length(energies),header.loops); 
-        
+        channels(k+1).rawData = flipud(raw_chn(i).data(imax+1:end,:));
         % save data
         for l = 1:header.loops
             
