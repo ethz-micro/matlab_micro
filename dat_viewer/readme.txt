@@ -8,11 +8,11 @@ The DAT viewer allows to open dat files and have a fast overview of all channels
 #  Setup
 # --------------------------------------------------
 
-In order to use the DAT viewer you need to set local paths for the NanoLib and the path to directory where images are saved.
+In order to use the DAT viewer you need to set local paths for the NanoLib (end eventually your library) and the path to directory where images are saved.
 To this end you have to save in the same directory a MATLAB script called ‘settings.m’ where ‘DAT.m’ is (this directory)  with the following informations:
 
 % local path to NanoLib. variable ‘nanoPath’ MUST be a cell.
-nanoPath = {'../../matlab_nanonis/NanoLib/','../../matlab_nanonis_experiments/‘};
+nanoPath = {'../../matlab_nanonis/NanoLib/','../../matlab_nanonis_myLibrary/‘};
 % your path to sxm data
 datPath = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/';
 
@@ -27,4 +27,6 @@ datPath = '/Volumes/micro/CLAM2/hpt_c6.2/Nanonis/Data/';
 
 3. Press items in the list box in order to let them appear in a new figure;
 
-4. Press on plotted curves to export them on a new figure. Additionally one can press on the button ‘hold exported’ (blue capital letters when active) to plot all exported curves together.
+4. Press on plotted channels to export them on a new figure.
+
+5. Whenever the button ‘hold exported’ is active (blue capital letters), all exported channels will be inserted in the same figure.

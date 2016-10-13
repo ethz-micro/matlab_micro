@@ -113,7 +113,6 @@ folderName = sprintf('%s%s',folderName,handles.hSystem.UserData);
 handles.hFolderName.String = folderName;
 
 loadFiles(hObject,handles)
-showFiles(hObject,eventdata,handles)
 
 % --- Executes on selection change in hFileList.
 function hFileList_Callback(hObject, eventdata, handles)
@@ -228,10 +227,10 @@ f = figure('Tag',userData.datFile.header.file,...
     'WindowStyle','Docked');
 
 nCh = numel(userData.datFile.channels);
-[nRow,nCol,~] = utility.fitFig2Screen(nCh,f.Position);
+[nRow,nCol] = utility.fitFig2Screen(nCh-1,f);
 
-for iCh = nCh:-1:1
-    sp = subplot(nCol,nRow,iCh);
+for iCh = nCh:-1:2
+    sp = subplot(nCol,nRow,iCh-1);
     sp_outPos =  get(gca,'OuterPosition');
     
     p = dat.plot.plotChannel(userData.datFile,userData.datFile.channels(iCh));
@@ -240,6 +239,7 @@ for iCh = nCh:-1:1
     set(sp,'FontSize',9)
     
     set(p,'ButtonDownFcn',@(hObject,eventdata)plotThis(hObject,eventdata,handles,userData.datFile,iCh))
+    set(sp,'ButtonDownFcn',@(hObject,eventdata)plotThis(hObject,eventdata,handles,userData.datFile,iCh))
 end
 
 function hPlot_Callback(hObject, eventdata, handles)
