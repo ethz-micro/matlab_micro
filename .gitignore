@@ -1,7 +1,11 @@
 ## Matlab Files to ingnore
-*viewerSettings.m
 *.asv
 *.m~
+*Settings.txt
+
+## System files
+._*
+.DS*
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
