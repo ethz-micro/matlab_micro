@@ -75,11 +75,11 @@ handles.hOpenFolder = uicontrol('Parent',hObject,'Style','pushbutton',...
 px = 20;
 py = 20;
 
-handles.hSValue = uicontrol('Parent',hObject,'Style','edit',...
-    'Position',[px,py+500,40,25],'String','0.015');
+% handles.hSValue = uicontrol('Parent',hObject,'Style','edit',...
+%     'Position',[px,py+500,40,25],'String','0.015');
 
 handles.hFileList = uicontrol('Parent',hObject,'Style','listbox',...
-    'Position',[px,py+300,300,200],'String','Files list',...
+    'Position',[px,py+300,300,240],'String','Files list',...
     'Callback',@(hObject,eventdata)hFileList_Callback(hObject,eventdata,guidata(hObject)));
 
 handles.hInfoList = uicontrol('Parent',hObject,'Style','listbox',...
@@ -180,16 +180,9 @@ userData = struct('sxmFile',[]);
 s = cell(numel(fileNames),1);
 for ii = 1:numel(fileNames)
     wbar = waitbar(progress(ii),wbar);
-% <<<<<<< HEAD
-%     if ii == 1
-%         sxmFile = sxm.load.loadProcessedSxM (...
-%             sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileNames(ii).name),...
-%             handles.hProcessType.String{handles.hProcessType.Value});
-%         sxmFile = processData(sxmFile,handles);
-% =======
+
     if ii == 1 || handles.hOpenAll.Value
         sxmFile = loadSXM(fileNames(ii).name,handles);
-% >>>>>>> e162fd276de6952b8c9f8f81337099bbabbd6e0f
     else
         sxmFile = struct('header',[],'channels',[]);
     end
@@ -223,17 +216,8 @@ newLoad = false;
 % check if user data is empty. if yes, load data
 if isempty(handles.hFileList.UserData(handles.hFileList.Value).sxmFile.header)
     fileName = handles.hFileList.String{handles.hFileList.Value};
-% <<<<<<< HEAD
-%     sxmFile = sxm.load.loadProcessedSxM (...
-%         sprintf('%s%s%s',folderName,handles.hSystem.UserData,fileName),...
-%         handles.hProcessType.String{handles.hProcessType.Value});
-%     
-%     sxmFile =  processData(sxmFile,handles);
-%     
-% =======
     hdlg = helpdlg(sprintf('open: %s',fileName));
     sxmFile = loadSXM(fileName,handles);
-% >>>>>>> e162fd276de6952b8c9f8f81337099bbabbd6e0f
     handles.hFileList.UserData(handles.hFileList.Value).sxmFile = sxmFile;
     newLoad = true;
     close(hdlg);
@@ -274,61 +258,18 @@ figure('Position',[380,50,(sSize(4)-100)*nRow/nCol,sSize(4)-200],...
 
 for iCh = nCh:-1:1
     sp = subplot(nCol,nRow,iCh);
-    sp_outPos =  get(gca,'OuterPosition');
     
-    p = sxm.plot.plotChannel(userData.sxmFile.channels(iCh),userData.sxmFile.header);
+    p = sxm.plot.plotChannel(userData.sxmFile.channels(iCh),userData.sxmFile.header,...
+        'Units','nm','holdPosition');
     colormap(sxm.op.nanonisMap(128))
     
     % plotData automatically sets
-    % 'FontSize'=12  and 'OuterPosition'=[0,0,1,1]
-    set(sp,'OuterPosition',sp_outPos);
     set(sp,'FontSize',9)
     
     set(p,'ButtonDownFcn',@(hObject,eventdata)plotThis(hObject,eventdata,userData.sxmFile,iCh))
 end
 
-% <<<<<<< HEAD
-% function sxmFile = processData(sxmFile,handles) %Gabriele
-% 
-%     %disp(handles.hSValue.String)
-%     %Add datas
-%     fwdbwd = {'forward','backward'};
-%     for i = 1:2
-%         chList = utility.getChannel(sxmFile.channels,'Channel_',fwdbwd{i});
-%         if chList ~ []
-%             SFMChn = utility.combineChannel(sxmFile,'4 channels',chList,1/4*[1,1,1,1]);
-%             INPChn = utility.combineChannel(sxmFile,'INP',chList,0.015*[1,0,-1,0]);
-%             INPDenChn = utility.combineChannel(sxmFile,'INPD',chList,[1,0,1,0]);
-%             INPChn.data = INPChn.data/INPDenChn.data;
-%             OOPChn = utility.combineChannel(sxmFile,'OOP',chList,0.015*[0,1,0,-1]);
-%             OOPDenChn = utility.combineChannel(sxmFile,'OOP',chList,[0,1,0,1]);
-%             OOPChn.data = OOPChn.data/OOPDenChn.data;
-%             
-%             iCh = numel(sxmFile.channels);
-%             
-%             sxmFile.channels(iCh+1).Name = SFMChn.Name;
-%             sxmFile.channels(iCh+1).Direction = SFMChn.Direction;
-%             sxmFile.channels(iCh+1).data = SFMChn.data;
-%             sxmFile.channels(iCh+1).Unit = SFMChn.Unit;
-%             
-%             sxmFile.channels(iCh+2).Name = INPChn.Name;
-%             sxmFile.channels(iCh+2).Direction = INPChn.Direction;
-%             sxmFile.channels(iCh+2).data = INPChn.data;
-%             sxmFile.channels(iCh+2).Unit = INPChn.Unit;
-%             
-%             sxmFile.channels(iCh+3).Name = OOPChn.Name;
-%             sxmFile.channels(iCh+3).Direction = OOPChn.Direction;
-%             sxmFile.channels(iCh+3).data = OOPChn.data;
-%             sxmFile.channels(iCh+3).Unit = OOPChn.Unit;
-%             
-%         end
-%         
-%     end
-% 
-% =======
 function closeViewer(hObject,eventdata,handles)
-% >>>>>>> e162fd276de6952b8c9f8f81337099bbabbd6e0f
-
 fprintf('close all windows\n');
 delete(hObject);
 
