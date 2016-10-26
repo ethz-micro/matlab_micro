@@ -42,7 +42,7 @@ header.pass_energy__ev_ = str2double(header.pass_energy__ev_);
 header.retarding_ratio = str2double(header.retarding_ratio);
 fmode = {'1:1';'1:3'};
 header.focus_mode = fmode{1+str2double(header.focus_mode)};
-header.focus_prcnt = str2double( header.focus__prcnt_);
+header.focus_prcnt = str2double(header.focus__prcnt_);
 header = rmfield(header,'focus__prcnt_');
 header.channeltron_front__v_ = str2double(header.channeltron_front__v_);
 header.channeltron_rear__v_ = str2double(header.channeltron_rear__v_);
@@ -104,12 +104,13 @@ if sweepMax ~= length(raw_chn(1).data)
         channels(k).Unit = raw_chn(i).Unit;
         channels(k).Direction = 'forward';
         channels(k).data = nan(length(energies),header.loops);
+        channels(k).rawData = raw_chn(i).data(1:imax,:);
         % backward
         channels(k+1).Name = raw_chn(i).Name;
         channels(k+1).Unit = raw_chn(i).Unit;
         channels(k+1).Direction = 'backward';
         channels(k+1).data = nan(length(energies),header.loops); 
-        
+        channels(k+1).rawData = flipud(raw_chn(i).data(imax+1:end,:));
         % save data
         for l = 1:header.loops
             
